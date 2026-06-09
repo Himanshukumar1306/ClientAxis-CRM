@@ -205,7 +205,22 @@ async function seedDatabase() {
   }
 }
 
-// Start Server
+// Module-level database connection cache for serverless environments (like Vercel)
+let isConnected = false;
+app.use(async (req, res, next) => {
+  if (process.env.VERCEL && !isConnected) {
+    try {
+      await connectDb(process.env.MONGODB_URI);
+      await seedDatabase();
+      isConnected = true;
+    } catch (err) {
+      console.error('Serverless DB connection error:', err);
+    }
+  }
+  next();
+});
+
+// Start Server locally
 async function startServer() {
   // Connect database (with fallback detection)
   await connectDb(process.env.MONGODB_URI);
@@ -221,4 +236,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start listener if NOT running as a Vercel serverless function
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;

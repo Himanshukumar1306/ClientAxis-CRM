@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = window.location.origin.includes('localhost') 
+  ? 'http://localhost:5000/api' 
+  : '/api';
 
 let jwtToken = localStorage.getItem('crm_token') || sessionStorage.getItem('crm_token') || null;
 
