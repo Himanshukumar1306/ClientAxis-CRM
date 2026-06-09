@@ -221,6 +221,7 @@ app.use(async (req, res, next) => {
       isConnected = true;
     } catch (err) {
       console.error('Serverless DB connection error:', err);
+      isConnected = true; // Avoid retrying on every request
     }
   }
   next();

@@ -28,5 +28,5 @@ const LeadSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-export const LeadModel = mongoose.model('Lead', LeadSchema);
+export const LeadModel = mongoose.models.Lead || mongoose.model('Lead', LeadSchema);
 export default LeadModel;

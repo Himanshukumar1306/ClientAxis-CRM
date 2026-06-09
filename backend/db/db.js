@@ -66,6 +66,7 @@ export async function connectDb(mongoUri) {
   try {
     // Attempt Mongoose connection with a short timeout to fail fast if MongoDB isn't running
     mongoose.set('strictQuery', false);
+    mongoose.set('bufferCommands', false);
     await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 3000,
     });
