@@ -34,6 +34,18 @@ export const api = {
   },
 
   // Auth requests
+  register: async (username, password, remember = true) => {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Registration failed.');
+    api.setToken(data.token, remember);
+    return data;
+  },
+
   login: async (username, password, remember = true) => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',

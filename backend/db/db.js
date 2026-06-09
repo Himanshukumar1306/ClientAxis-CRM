@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const LOCAL_DB_DIR = path.join(__dirname, 'local_db');
+const LOCAL_DB_DIR = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'local_db');
 const LEADS_FILE = path.join(LOCAL_DB_DIR, 'leads.json');
 const USERS_FILE = path.join(LOCAL_DB_DIR, 'users.json');
 
@@ -112,6 +112,9 @@ export const db = {
         if (query.assignedTo && query.assignedTo !== 'all') {
           mongoQuery = mongoQuery.where('assignedTo').equals(query.assignedTo);
         }
+        if (query.ownerId) {
+          mongoQuery = mongoQuery.where('ownerId').equals(query.ownerId);
+        }
         // Sort descending by date
         return await mongoQuery.sort({ date: -1 }).exec();
       } else {
@@ -137,6 +140,10 @@ export const db = {
         // Filter assignedTo
         if (query.assignedTo && query.assignedTo !== 'all') {
           leads = leads.filter(l => l.assignedTo === query.assignedTo);
+        }
+        // Filter ownerId
+        if (query.ownerId) {
+          leads = leads.filter(l => l.ownerId === query.ownerId);
         }
         
         // Sort descending by date

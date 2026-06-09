@@ -39,6 +39,9 @@ async function seedDatabase() {
       console.log(`✅ Default admin created. Username: admin, Password: ${defaultPassword}`);
     }
 
+    const adminUser = await db.users.findOne({ username: 'admin' });
+    const adminUserId = adminUser ? adminUser._id.toString() : 'admin-fallback-id';
+
     // 2. Seed mock leads if no leads exist
     const leads = await db.leads.find({});
     if (leads.length === 0) {
@@ -196,7 +199,10 @@ async function seedDatabase() {
       ];
 
       for (const lead of mockLeads) {
-        await db.leads.create(lead);
+        await db.leads.create({
+          ...lead,
+          ownerId: adminUserId
+        });
       }
       console.log('✅ Mock client leads seeded successfully.');
     }

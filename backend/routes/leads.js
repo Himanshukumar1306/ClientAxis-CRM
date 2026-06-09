@@ -43,7 +43,7 @@ function calculatePotentialValue(email) {
 
 // POST /api/leads/submit (Public - simulated website contact form)
 router.post('/submit', async (req, res) => {
-  const { name, email, phone, message, source } = req.body;
+  const { name, email, phone, message, source, ownerId } = req.body;
 
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required.' });
@@ -59,7 +59,20 @@ router.post('/submit', async (req, res) => {
 
     const activityText = `Form Submitted via ${source || 'Website Form'}`;
 
+    // Find a fallback owner if none specified
+    let targetOwnerId = ownerId;
+    if (!targetOwnerId) {
+      let defaultOwner = await db.users.findOne({ username: 'admin' });
+      if (!defaultOwner) {
+        defaultOwner = await db.users.findOne({});
+      }
+      if (defaultOwner) {
+        targetOwnerId = defaultOwner._id;
+      }
+    }
+
     const newLead = await db.leads.create({
+      ownerId: targetOwnerId,
       name,
       email,
       phone: phone || '',
@@ -92,7 +105,7 @@ router.get('/', async (req, res) => {
   const { search, status, source, assignedTo } = req.query;
 
   try {
-    const leads = await db.leads.find({ search, status, source, assignedTo });
+    const leads = await db.leads.find({ search, status, source, assignedTo, ownerId: req.user.id });
     res.json({ leads, isFallback: isFallback() });
   } catch (error) {
     console.error('Fetch leads error:', error);
@@ -103,7 +116,7 @@ router.get('/', async (req, res) => {
 // GET /api/leads/sources (Admin - get all unique lead sources for filters)
 router.get('/sources', async (req, res) => {
   try {
-    const leads = await db.leads.find({});
+    const leads = await db.leads.find({ ownerId: req.user.id });
     const sources = [...new Set(leads.map(l => l.source).filter(Boolean))];
     res.json({ sources });
   } catch (error) {
@@ -118,6 +131,9 @@ router.get('/:id', async (req, res) => {
     const lead = await db.leads.findById(req.params.id);
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found.' });
+    }
+    if (lead.ownerId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. You do not own this lead.' });
     }
     res.json(lead);
   } catch (error) {
@@ -139,6 +155,9 @@ router.put('/:id/status', async (req, res) => {
     const lead = await db.leads.findById(req.params.id);
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found.' });
+    }
+    if (lead.ownerId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. You do not own this lead.' });
     }
 
     const oldStatus = lead.status;
@@ -171,6 +190,9 @@ router.put('/:id/details', async (req, res) => {
     const lead = await db.leads.findById(req.params.id);
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found.' });
+    }
+    if (lead.ownerId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. You do not own this lead.' });
     }
 
     const activities = lead.activities || [];
@@ -239,6 +261,9 @@ router.post('/:id/notes', async (req, res) => {
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found.' });
     }
+    if (lead.ownerId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. You do not own this lead.' });
+    }
 
     // Add note
     const notes = lead.notes || [];
@@ -270,10 +295,15 @@ router.post('/:id/notes', async (req, res) => {
 // DELETE /api/leads/:id (Admin - delete lead)
 router.delete('/:id', async (req, res) => {
   try {
-    const deletedLead = await db.leads.findByIdAndDelete(req.params.id);
-    if (!deletedLead) {
+    const lead = await db.leads.findById(req.params.id);
+    if (!lead) {
       return res.status(404).json({ error: 'Lead not found.' });
     }
+    if (lead.ownerId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. You do not own this lead.' });
+    }
+
+    const deletedLead = await db.leads.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Lead deleted successfully.' });
   } catch (error) {
     console.error('Delete lead error:', error);

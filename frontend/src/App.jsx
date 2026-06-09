@@ -83,9 +83,9 @@ export default function App() {
         try {
           const token = api.getToken();
           const payload = JSON.parse(atob(token.split('.')[1]));
-          setUser({ username: payload.username || 'admin' });
+          setUser({ id: payload.id, username: payload.username || 'admin' });
         } catch (e) {
-          setUser({ username: 'admin' });
+          setUser({ id: 'admin-fallback-id', username: 'admin' });
         }
       }
       setLoadingAuth(false);
@@ -518,8 +518,12 @@ export default function App() {
                   gap: '4px'
                 }}>
                   <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
-                    <p style={{ margin: 0, fontSize: '13px', fontWeight: 'bold' }}>John Admin</p>
-                    <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-muted)' }}>john@crm.local</p>
+                    <p style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user ? user.username.split('@')[0] : 'Admin'}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user && user.username.includes('@') ? user.username : `${user ? user.username : 'admin'}@crm.local`}
+                    </p>
                   </div>
                   <button
                     onClick={() => { setActiveTab('settings'); setShowProfileDropdown(false); }}
@@ -598,6 +602,7 @@ export default function App() {
 
           {activeTab === 'simulator' && (
             <ContactFormSimulator 
+              ownerId={user ? user.id : ''}
               onLeadAdded={() => setRefreshTrigger(prev => prev + 1)}
             />
           )}

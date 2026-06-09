@@ -5,6 +5,8 @@ import { api } from '../utils/api';
 export default function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -86,14 +88,29 @@ export default function Login({ onLoginSuccess }) {
       return;
     }
 
+    if (isSignUp && !confirmPassword) {
+      setError('Please confirm your password.');
+      return;
+    }
+
+    if (isSignUp && password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
     try {
-      const data = await api.login(username, password, remember);
-      onLoginSuccess(data.user);
+      if (isSignUp) {
+        const data = await api.register(username, password, remember);
+        onLoginSuccess(data.user);
+      } else {
+        const data = await api.login(username, password, remember);
+        onLoginSuccess(data.user);
+      }
     } catch (err) {
-      setError(err.message || 'Invalid username or password.');
+      setError(err.message || 'Authentication failed.');
     } finally {
       setLoading(false);
     }
@@ -167,7 +184,9 @@ export default function Login({ onLoginSuccess }) {
             }}
           />
           <h2 style={{ fontSize: '28px', color: 'var(--color-text-primary)', margin: '0 0 6px 0', fontFamily: 'var(--font-title)', fontWeight: '700', letterSpacing: '-0.03em' }}>ClientAxis</h2>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', margin: 0 }}>Secure Admin Access</p>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', margin: 0 }}>
+            {isSignUp ? 'Create a New Account' : 'Secure Admin Access'}
+          </p>
         </div>
 
         {error && (
@@ -190,16 +209,17 @@ export default function Login({ onLoginSuccess }) {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Username</label>
+            <label style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Username / Email</label>
             <div style={{ position: 'relative' }}>
               <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
               <input
                 type="text"
-                placeholder="Enter username (admin)"
+                placeholder={isSignUp ? "Choose a username or email" : "Enter username (admin)"}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
                 style={{ paddingLeft: '38px' }}
+                required
               />
             </div>
           </div>
@@ -207,26 +227,47 @@ export default function Login({ onLoginSuccess }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Password</label>
-              <button 
-                type="button" 
-                onClick={() => setShowForgotModal(true)}
-                style={{ fontSize: '12px', color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                Forgot Password?
-              </button>
+              {!isSignUp && (
+                <button 
+                  type="button" 
+                  onClick={() => setShowForgotModal(true)}
+                  style={{ fontSize: '12px', color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  Forgot Password?
+                </button>
+              )}
             </div>
             <div style={{ position: 'relative' }}>
               <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
               <input
                 type="password"
-                placeholder="Enter password (adminpassword123)"
+                placeholder={isSignUp ? "Choose a strong password" : "Enter password (adminpassword123)"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 style={{ paddingLeft: '38px' }}
+                required
               />
             </div>
           </div>
+
+          {isSignUp && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Confirm Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                <input
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
+                  style={{ paddingLeft: '38px' }}
+                  required
+                />
+              </div>
+            </div>
+          )}
 
           {/* Remember Me Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '2px 0' }}>
@@ -251,13 +292,28 @@ export default function Login({ onLoginSuccess }) {
             {loading ? (
               <>
                 <Loader size={18} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                Authenticating...
+                {isSignUp ? 'Creating Account...' : 'Authenticating...'}
               </>
             ) : (
-              'Sign In'
+              isSignUp ? 'Sign Up' : 'Sign In'
             )}
           </button>
         </form>
+
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setError('');
+              setPassword('');
+              setConfirmPassword('');
+            }}
+            style={{ fontSize: '13px', color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+          </button>
+        </div>
 
         {/* Separator */}
         <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0 16px 0', gap: '10px' }}>

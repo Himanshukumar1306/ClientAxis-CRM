@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Send, CheckCircle2, Copy, Code, Sparkles, Loader } from 'lucide-react';
 import { api } from '../utils/api';
 
-export default function ContactFormSimulator({ onLeadAdded }) {
+export default function ContactFormSimulator({ ownerId, onLeadAdded }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,20 +14,23 @@ export default function ContactFormSimulator({ onLeadAdded }) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email) {
       setError('Name and Email are required.');
       return;
     }
-
+ 
     setLoading(true);
     setError('');
     setSuccess(false);
-
+ 
     try {
-      const result = await api.submitLeadForm(formData);
+      const result = await api.submitLeadForm({
+        ...formData,
+        ownerId
+      });
       setSuccess(true);
       setFormData({
         name: '',
