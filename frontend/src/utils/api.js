@@ -40,7 +40,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('A server error occurred. Please try again later.');
+    }
     if (!response.ok) throw new Error(data.error || 'Registration failed.');
     api.setToken(data.token, remember);
     return data;
@@ -52,7 +57,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('A server error occurred. Please try again later.');
+    }
     if (!response.ok) throw new Error(data.error || 'Login failed.');
     api.setToken(data.token, remember);
     return data;
@@ -64,7 +74,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credential }),
     });
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('A server error occurred. Please try again later.');
+    }
     if (!response.ok) throw new Error(data.error || 'Google login failed.');
     api.setToken(data.token, remember);
     return data;
@@ -76,7 +91,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username }),
     });
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('A server error occurred. Please try again later.');
+    }
     if (!response.ok) throw new Error(data.error || 'Failed to send recovery code.');
     return data;
   },
@@ -87,7 +107,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, code, newPassword }),
     });
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('A server error occurred. Please try again later.');
+    }
     if (!response.ok) throw new Error(data.error || 'Failed to reset password.');
     return data;
   },
