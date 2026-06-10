@@ -212,16 +212,17 @@ async function seedDatabase() {
 }
 
 // Module-level database connection cache for serverless environments (like Vercel)
-let isConnected = false;
+let isSeeded = false;
 app.use(async (req, res, next) => {
-  if (process.env.VERCEL && !isConnected) {
+  if (process.env.VERCEL) {
     try {
       await connectDb(process.env.MONGODB_URI);
-      await seedDatabase();
-      isConnected = true;
+      if (!isSeeded) {
+        await seedDatabase();
+        isSeeded = true;
+      }
     } catch (err) {
       console.error('Serverless DB connection error:', err);
-      isConnected = true; // Avoid retrying on every request
     }
   }
   next();

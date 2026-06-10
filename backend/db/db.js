@@ -11,9 +11,11 @@ const LEADS_FILE = path.join(LOCAL_DB_DIR, 'leads.json');
 const USERS_FILE = path.join(LOCAL_DB_DIR, 'users.json');
 
 let fallbackMode = false;
+let localDbInitialized = false;
 
 // Ensure local JSON directory and files exist
 async function ensureLocalDbFiles() {
+  if (localDbInitialized) return;
   try {
     await fs.mkdir(LOCAL_DB_DIR, { recursive: true });
     
@@ -28,6 +30,7 @@ async function ensureLocalDbFiles() {
     } catch {
       await fs.writeFile(USERS_FILE, JSON.stringify([], null, 2));
     }
+    localDbInitialized = true;
   } catch (error) {
     console.error('Error initializing local database files:', error);
   }
@@ -57,6 +60,11 @@ async function writeJsonFile(filePath, data) {
 export async function connectDb(mongoUri) {
   await ensureLocalDbFiles();
   
+  if (mongoose.connection.readyState === 1) {
+    fallbackMode = false;
+    return true;
+  }
+
   if (!mongoUri) {
     console.warn('⚠️ No MONGODB_URI provided. Falling back to local JSON database.');
     fallbackMode = true;
@@ -82,7 +90,7 @@ export async function connectDb(mongoUri) {
 }
 
 export function isFallback() {
-  return fallbackMode;
+  return fallbackMode || mongoose.connection.readyState !== 1;
 }
 
 // Mongoose Models (imported dynamically or registered via mongoose)
@@ -93,7 +101,7 @@ import { UserModel } from '../models/User.js';
 export const db = {
   leads: {
     find: async (query = {}) => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           // Build Mongoose query
           let mongoQuery = LeadModel.find();
@@ -158,7 +166,7 @@ export const db = {
     },
 
     findById: async (id) => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           return await LeadModel.findById(id);
         } catch (error) {
@@ -171,7 +179,7 @@ export const db = {
     },
 
     create: async (leadData) => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           const newLead = new LeadModel(leadData);
           return await newLead.save();
@@ -194,7 +202,7 @@ export const db = {
     },
 
     findByIdAndUpdate: async (id, updateData) => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           return await LeadModel.findByIdAndUpdate(id, updateData, { new: true });
         } catch (error) {
@@ -216,7 +224,7 @@ export const db = {
     },
 
     findByIdAndDelete: async (id) => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           return await LeadModel.findByIdAndDelete(id);
         } catch (error) {
@@ -236,7 +244,7 @@ export const db = {
 
   users: {
     findOne: async (query) => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           return await UserModel.findOne(query);
         } catch (error) {
@@ -252,7 +260,7 @@ export const db = {
     },
 
     create: async (userData) => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           const newUser = new UserModel(userData);
           return await newUser.save();
@@ -272,7 +280,7 @@ export const db = {
     },
 
     countDocuments: async () => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           return await UserModel.countDocuments();
         } catch (error) {
@@ -285,7 +293,7 @@ export const db = {
     },
 
     updatePassword: async (username, newHashedPassword) => {
-      if (!fallbackMode) {
+      if (!fallbackMode && mongoose.connection.readyState === 1) {
         try {
           return await UserModel.findOneAndUpdate({ username }, { password: newHashedPassword });
         } catch (error) {
